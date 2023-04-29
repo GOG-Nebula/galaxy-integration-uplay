@@ -6,18 +6,16 @@ on:
       - completed
   push:
     branches: [ master ]
-    
   pull_request:
     branches: [ master, dev ]
-    types:
-      - synchronize
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.7]
+        os: [macOS-latest, windows-latest]
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -25,60 +23,69 @@ jobs:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
         ref: ${{ github.event.pull_request.head.ref }}
 
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        # Semantic version range syntax or exact version of a Python version
-        python-version: '3.7' 
-        # Optional - x64 or x86 architecture, defaults to x64
-        architecture: 'x86' 
-    # You can test your matrix by printing the current Python version
-    
     - name: Display Python version
       run: python -c "import sys; print(sys.version)"
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+    
+    - name: Build plugin
+      uses: GOG-Nebula/action-build-plugin@feat/simple_composite_action
       with:
-        python-version: ${{ matrix.python-version }}
-        
-    - name: Install dependencies
-      run: |
-        py  -3.7-32 -m pip install --upgrade pip
-        py  -3.7-32 -m pip install -r requirements/app.txt
-        py  -3.7-32 -m pip install -r requirements/app.txt --target ./src/
-    
-    
+        target: ./build
+
+  # TODO - thinks about the flow for release
+  # 
+  # Option 1 (simple) - release job have to be after build job
+  # 1 build job with upload artifacts
+  # 2 release job: 
+  #     - download all artifacts
+  #     - create and publish Github release
+  #
+  # Option 2a (saves resources):
+  # 1. create release job
+  # 2. build job
+  #      - build action (can expose build.zip inside build action)
+  #      - upload directly to previously created release
+  # 3. publish release job
+  # Option 2b -- release job wraps build job so plugin have only build for MR and release for `master` set ups
+  #
+  # Option 3:
+  # - release previously build&tested artifacts (don't build them again)
+  #
+  # release:
+  #   - uses GOG-Nebula/action-release-plugin
+  #     with:
+  #       target-build: ./build
+  #       zip_name: 
+
     - name: Create zip archive
       shell: bash
       env:
-        ZIP_NAME: uplay_win_afb5a69c-b2ee-4d58-b916-f4cd75d4999a
+        ZIP_NAME: uplay_${{ runner.os }}_afb5a69c-b2ee-4d58-b916-f4cd75d4999a
       run: |
-        7z a ${ZIP_NAME}.zip ./src/*
-        
+        7z a ${ZIP_NAME}.zip ./build/*
+
     - name: get version
       id: version
       uses: notiz-dev/github-action-json-property@release
       with: 
-        path: 'src/manifest.json'
+        path: 'build/manifest.json'
         prop_path: 'version'
-    
+  
     - name: Upload result
       uses: actions/upload-artifact@v1
       with:
-        name: uplay_win_${{steps.version.outputs.prop}}
-        path: uplay_win_afb5a69c-b2ee-4d58-b916-f4cd75d4999a.zip
-        
-    - name: Automatic Releases
-      uses: marvinpinto/action-automatic-releases@latest
-      with:
-        # GitHub secret token
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        # Git tag (for automatic releases)
-        automatic_release_tag: early_release_${{steps.version.outputs.prop}}
-        # Should this release be marked as a pre-release?
-        prerelease: True
-        # Release title (for automatic releases)
-        title: early_release_${{steps.version.outputs.prop}}
-        # Assets to upload to the release
-        files: uplay_win_afb5a69c-b2ee-4d58-b916-f4cd75d4999a.zip
+        name: uplay_${{ runner.os }}_${{steps.version.outputs.prop}}
+        path: uplay_${{ runner.os }}_afb5a69c-b2ee-4d58-b916-f4cd75d4999a.zip
+    
+    # - name: Automatic Releases
+    #   uses: marvinpinto/action-automatic-releases@latest
+    #   with:
+    #     # GitHub secret token
+    #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+    #     # Git tag (for automatic releases)
+    #     automatic_release_tag: early_release_${{steps.version.outputs.prop}}
+    #     # Should this release be marked as a pre-release?
+    #     prerelease: True
+    #     # Release title (for automatic releases)
+    #     title: early_release_${{steps.version.outputs.prop}}
+    #     # Assets to upload to the release
+    #     files: uplay_win_afb5a69c-b2ee-4d58-b916-f4cd75d4999a.zip

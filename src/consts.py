@@ -1,6 +1,7 @@
 import os
 from definitions import System, SYSTEM
 import re
+import requests
 UBISOFT_REGISTRY = "SOFTWARE\\Ubisoft"
 STEAM_REGISTRY = "Software\\Valve\\Steam"
 UBISOFT_REGISTRY_LAUNCHER = "SOFTWARE\\Ubisoft\\Launcher"
@@ -12,8 +13,20 @@ if SYSTEM == System.WINDOWS:
 UBISOFT_CONFIGURATIONS_BLACKLISTED_NAMES = ["gamename", "l1", '', 'ubisoft game', 'name']
 
 CHROME_USERAGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
-CLUB_APPID = "314d4fef-e568-454a-ae06-43e3bece12a6"
-CLUB_GENOME_ID = "85c31714-0941-4876-a18d-2c7e9dce8d40"
+ids_url = 'https://ubisoftconnect.com/invalid'
+ids_response = requests.get(ids_url)
+regex_ids_response = re.findall('APP_ID.{0,40}|GENOME_ID.{0,40}', ids_response.text) 
+
+ids_result = []
+for sub in regex_ids_response:
+    sub = sub.replace('"','')
+    if ':' in sub:
+        ids_result.append(map(str.strip, sub.split(':', 1)))
+
+ids_result = dict(ids_result)
+
+CLUB_APPID = ids_result.get('APP_ID','')
+CLUB_GENOME_ID = ids_result.get('GENOME_ID','')
 
 AUTH_PARAMS = {
     "window_title": "Login | Ubisoft WebAuth",

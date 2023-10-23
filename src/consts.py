@@ -12,8 +12,8 @@ if SYSTEM == System.WINDOWS:
 UBISOFT_CONFIGURATIONS_BLACKLISTED_NAMES = ["gamename", "l1", '', 'ubisoft game', 'name']
 
 CHROME_USERAGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
-CLUB_APPID = "314d4fef-e568-454a-ae06-43e3bece12a6"
-CLUB_GENOME_ID = "85c31714-0941-4876-a18d-2c7e9dce8d40"
+CLUB_APPID = "f35adcb5-1911-440c-b1c9-48fdc1701c68"
+CLUB_GENOME_ID = "5b36b900-65d8-47f3-93c8-86bdaa48ab50"
 
 AUTH_PARAMS = {
     "window_title": "Login | Ubisoft WebAuth",
